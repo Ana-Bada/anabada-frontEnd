@@ -1,18 +1,16 @@
+import { Link, Outlet, useLocation } from "react-router-dom";
+import styled from "styled-components";
+import { useDispatch, useSelector } from "react-redux";
 
-import { Link, Outlet, useLocation } from 'react-router-dom';
-import styled from 'styled-components';
-import { useDispatch, useSelector } from 'react-redux';
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Cookies } from "react-cookie";
+import AlertToast from "./AlertToast";
 
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Cookies } from 'react-cookie';
-import AlertToast from './AlertToast';
+import { MdOutlineNotificationsNone } from "react-icons/md";
+import { GrNotification } from "react-icons/gr";
+import { BsFillChatDotsFill } from "react-icons/bs";
 
-import { MdOutlineNotificationsNone } from 'react-icons/md';
-import { GrNotification } from 'react-icons/gr';
-import { BsFillChatDotsFill } from 'react-icons/bs';
-
-
-const Header = memo(() => {
+const Header = memo(({ notifications }) => {
   const location = useLocation();
   const { pathname } = location;
   const timer = useRef(null);
@@ -115,9 +113,12 @@ const Header = memo(() => {
               </>
             ) : (
               <>
-                <div className="header__user__info">
-                  <Link to="/notification">
-                    <GrNotification />
+                <div className="header__user__info header__user__info-islogin">
+                  <Link to="/notifications">
+                    <NotificationContainer noti={notifications?.isBadge}>
+                      <GrNotification />
+                      <div className="notification__red"></div>
+                    </NotificationContainer>
                   </Link>
                   <Link to="/room">
                     <BsFillChatDotsFill />
@@ -185,8 +186,10 @@ const MainHeader = styled.div`
     justify-content: center;
     align-items: center;
 
-    a {
-      margin-left: 1rem;
+    .header__user__info-islogin {
+      a {
+        margin-left: 1.2rem;
+      }
     }
 
     svg {
@@ -270,4 +273,18 @@ const NavElement = styled.nav`
 
 const Layout = styled.div`
   padding: 5.5rem 1rem;
+`;
+
+const NotificationContainer = styled.div`
+  position: relative;
+  .notification__red {
+    width: 0.4rem;
+    height: 0.4rem;
+    z-index: 999;
+    background-color: ${(props) => (props.noti ? "inherit" : "red")};
+    position: absolute;
+    border-radius: 50px;
+    bottom: 0;
+    right: 0;
+  }
 `;

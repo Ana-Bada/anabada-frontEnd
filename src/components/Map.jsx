@@ -69,22 +69,25 @@ const KakaoMap = memo(() => {
               lineHeight: '31px'
             },
             {
-              width: '40px',
-              height: '40px',
+              width: '50px',
+              height: '50px',
               background: '#5dabfd',
-              borderRadius: '20px',
+              borderRadius: '50px',
               color: '#000',
               textAlign: 'center',
               fontWeight: 'bold',
-              lineHeight: '41px'
+              lineHeight: '41px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center'
             },
             {
-              width: '50px',
-              height: '50px',
+              width: '70px',
+              height: '70px',
               background: '#007AFF',
               backgroundImage: 'url("/assets/background.png")',
 
-              borderRadius: '25px',
+              borderRadius: '50px',
               color: '#000',
               textAlign: 'center',
               fontWeight: 'bold',
