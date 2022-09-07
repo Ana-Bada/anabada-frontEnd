@@ -15,5 +15,9 @@ export const queryKeys = {
   messages: 'messages',
   myMeetsList: 'myMeetsList',
 
-  notifications: 'notifications'
+  // 알림
+  notifications: 'notifications',
+
+  // 맵
+  spotData: 'spotData'
 };

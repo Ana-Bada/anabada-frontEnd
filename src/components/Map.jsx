@@ -4,6 +4,7 @@ import { memo, useCallback, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import checkedWeather from '../styles/weather';
 import { Map, CustomOverlayMap, MarkerClusterer } from 'react-kakao-maps-sdk';
+import { queryKeys } from '../react-query/constants';
 
 const { kakao } = window;
 
@@ -34,7 +35,7 @@ const KakaoMap = memo(() => {
     axios.get(`http://${process.env.REACT_APP_API_SERVER}/api/beach`);
   // react-query
   const { data, isLoading, isFetching, isError, error } = useQuery(
-    ['spotData'],
+    [queryKeys.spotData],
     fetchingSpot,
     {
       staleTime: 1000 * 60 * 30,
