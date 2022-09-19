@@ -1,16 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import SockJS from 'sockjs-client';
-import { Stomp, Client } from '@stomp/stompjs';
-import { useSelector } from 'react-redux';
-import styled from 'styled-components';
-import Navigate from '../../layout/Navigate';
-import { borderRadius } from '@mui/system';
-import { MdSend } from 'react-icons/md';
-import { chatApi } from '../../shared/api';
-import { useMessages } from '../../react-query/hooks/chat/useMessages';
-import { useInView } from 'react-intersection-observer';
-import { useCallback } from 'react';
+import React, { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
+import { useSelector } from "react-redux";
+import styled from "styled-components";
+import Navigate from "../../layout/Navigate";
+import { chatApi } from "../../shared/api";
+import { useMessages } from "../../react-query/hooks/chat/useMessages";
+import { useInView } from "react-intersection-observer";
+import { useCallback } from "react";
 
 const Chat = () => {
   const params = useParams();
@@ -24,18 +22,20 @@ const Chat = () => {
 
   const clientRef = useRef(null);
   const [roomId, setRoomId] = useState(null);
+
   const [chatMessages, setChatMessages] = useState([]);
-  const [senderProfileImg, setSenderProfileImg] = useState('');
-  const [message, setMessage] = useState('');
+  const [senderProfileImg, setSenderProfileImg] = useState("");
+  const [receiverProfileImg, setReceiverProfileImg] = useState("");
+  const [message, setMessage] = useState("");
 
-  const isMessage = message !== '';
+  const isMessage = message !== "";
 
-  const [prevScrollHeight, setPrevScrollHeight] = useState('');
+  const [prevScrollHeight, setPrevScrollHeight] = useState("");
 
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem("accessToken");
   const headers = { accessToken: token };
 
-  //roomId가 있을때만 요청을 하고싶은데??
+  //roomId가 있을때 요청
   const { messages, fetchNextPage, isFetchingNextPage, __setRoomId } =
     useMessages();
 
@@ -56,7 +56,7 @@ const Chat = () => {
       webSocketFactory: () =>
         new SockJS(`https://${process.env.REACT_APP_API_SERVER}/socket`), // proxy를 통한 접속
       connectHeaders: {
-        headers // 토큰 전달
+        headers, // 토큰 전달
       },
       debug: function (str) {
         console.log(str);
@@ -72,7 +72,7 @@ const Chat = () => {
       onStompError: (frame) => {
         // error message 출력
         console.error(frame);
-      }
+      },
     });
 
     // 클라이언트 활성화
@@ -91,7 +91,7 @@ const Chat = () => {
 
       setChatMessages((_chatMessages) => [
         ..._chatMessages,
-        { nickname: getNickname, message: getMessage }
+        { nickname: getNickname, message: getMessage },
       ]);
     });
   };
@@ -106,29 +106,16 @@ const Chat = () => {
     clientRef.current.publish({
       destination: `/pub/messages/${roomId}`,
       headers: {
-        accessToken: token
+        accessToken: token,
       },
-      body: JSON.stringify({ content: message })
+      body: JSON.stringify({ content: message }),
     });
 
-    setMessage(''); // 메세지 초기화
+    setMessage(""); // 메세지 초기화
   };
 
   const scrollToBottom = () => {
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  };
-
-  // TODO: 역방향 스크롤
-  const onFetchMessages = useCallback(() => {
-    // 1. 스크롤이 최상단에 닿여서 데이터를 불러오기전에 현재 scrollHeight를 저장한다
-    // 2. 새로운 데이터를 불러왔을때 scrollHeight에서 저장해둔 scrollHeight를 뺀값이 현재 스크롤 위치
-    setPrevScrollHeight(scrollRef.current?.scrollHeight);
-
-    fetchNextPage();
-  }, []);
-
-  const onScrollTo = (y) => {
-    scrollRef.current.scrollTop = y;
   };
 
   useEffect(() => {
@@ -137,15 +124,19 @@ const Chat = () => {
         // 방생성 요청
         const res = await chatApi.createChat(params.nickname);
 
-        let getRoomId, getSenderProfileImg;
+        let getRoomId, getSenderProfileImg, getReceiverProfileImg;
         if (res.status === 200) {
           getRoomId = res.data.roomId;
+
           getSenderProfileImg = res.data.senderProfileImg;
+          getReceiverProfileImg = res.data.receiverProfileImg;
         } else {
           getRoomId = res.response.data.roomId;
           getSenderProfileImg = res.response.data.senderProfileImg;
+          getReceiverProfileImg = res.response.data.receiverProfileImg;
         }
 
+        setReceiverProfileImg(getReceiverProfileImg);
         setSenderProfileImg(getSenderProfileImg);
         setRoomId(getRoomId);
 
@@ -159,6 +150,7 @@ const Chat = () => {
 
     // unmount 될때 클라이언트 비활성화
     return () => disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -166,34 +158,44 @@ const Chat = () => {
       // 페이지가 로딩 되고 roomId가 있을때 클라이언트 활성화 & 구독
       connect();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages]);
 
+  // TODO: 역방향 스크롤
+  const onFetchMessages = useCallback(() => {
+    // 1. 스크롤이 최상단에 닿여서 데이터를 불러오기전에 현재 scrollHeight를 저장한다
+    // 2. 새로운 데이터를 불러왔을때 scrollHeight에서 저장해둔 scrollHeight를 뺀값이 현재 스크롤 위치
+    setPrevScrollHeight(scrollRef.current?.scrollHeight);
+
+    fetchNextPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onScrollTo = (y) => {
+    scrollRef.current.scrollTop = y;
+  };
+
   useEffect(() => {
     // 화면에 노출되면, 데이터를 불러오는 함수를 실행
     if (inView && messages) {
       onFetchMessages();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView]);
 
   useEffect(() => {
-    //  useEffect를 이용해 messages의 변화를 관찰 page가 변화했다는 것은 메세지가 더 요청이 되었다.
     if (prevScrollHeight) {
-      // (무한스크롤을 통해 새로운 데이터를 가져오는 경우)
-      // 스크롤 위치를 현재 scrollHeight - 과거 scrollHeight(prevScrollHeight)로 유지하고
-      // 없을경우(새로운 채팅을 보내거나 첫 렌더링시)에는 에는 스크롤을 맨아래로 이동.
-      // 새로운 데이터를 불러오기 전 마지막 채팅이 있던 곳에 스크롤 위치를 유지
       onScrollTo(scrollRef.current?.scrollHeight - prevScrollHeight);
-      // 스크롤 위치 이동 후 과거 스크롤 위치는 null로 바꿔줍니다
       return setPrevScrollHeight(null);
     }
-
     onScrollTo(
       scrollRef.current?.scrollHeight - scrollRef.current?.clientHeight
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages?.pages]);
 
   return (
@@ -201,7 +203,7 @@ const Chat = () => {
       <Navigate
         text={senderNickname}
         padding={true}
-        profileImg={senderProfileImg}
+        profileImg={receiverProfileImg}
       />
       <Divider />
       <ChatContainer ref={scrollRef}>
@@ -216,12 +218,12 @@ const Chat = () => {
                   page.data[idx - 1].nickname !== page.data[idx].nickname) ? (
                   <>
                     <img
-                      src={senderProfileImg}
+                      src={receiverProfileImg}
                       alt="profileImage"
                       style={{
-                        width: '2rem',
-                        height: '2rem',
-                        borderRadius: '50%'
+                        width: "2rem",
+                        height: "2rem",
+                        borderRadius: "50%",
                       }}
                     />
                     <div className="firstMessageBox">
@@ -234,10 +236,10 @@ const Chat = () => {
                       src={senderProfileImg}
                       alt="profileImage"
                       style={{
-                        width: '2rem',
-                        height: '2rem',
-                        borderRadius: '50%',
-                        visibility: 'hidden'
+                        width: "2rem",
+                        height: "2rem",
+                        borderRadius: "50%",
+                        visibility: "hidden",
                       }}
                     />
                     <div className="messageBox">
@@ -256,7 +258,6 @@ const Chat = () => {
           );
         })}
 
-        <Time>오후 12:34</Time>
         {chatMessages &&
           chatMessages.length > 0 &&
           chatMessages.map((msg, index) =>
@@ -268,12 +269,12 @@ const Chat = () => {
                     chatMessages[index].nickname) ? (
                   <>
                     <img
-                      src={senderProfileImg}
+                      src={receiverProfileImg}
                       alt="profileImage"
                       style={{
-                        width: '2rem',
-                        height: '2rem',
-                        borderRadius: '50%'
+                        width: "2rem",
+                        height: "2rem",
+                        borderRadius: "50%",
                       }}
                     />
                     <div className="firstMessageBox">
@@ -286,10 +287,10 @@ const Chat = () => {
                       src={senderProfileImg}
                       alt="profileImage"
                       style={{
-                        width: '2rem',
-                        height: '2rem',
-                        borderRadius: '50%',
-                        visibility: 'hidden'
+                        width: "2rem",
+                        height: "2rem",
+                        borderRadius: "50%",
+                        visibility: "hidden",
                       }}
                     />
                     <div className="messageBox">
@@ -313,7 +314,7 @@ const Chat = () => {
           <img
             src={profileImg}
             alt="profileImage"
-            style={{ width: '2rem', height: '2rem', borderRadius: '50%' }}
+            style={{ width: "2rem", height: "2rem", borderRadius: "50%" }}
           />
           <InputBox>
             <input
@@ -322,7 +323,7 @@ const Chat = () => {
               value={message}
               onChange={onChange}
               onKeyPress={(e) =>
-                e.target.value !== '' && e.which === 13 && publish(message)
+                e.target.value !== "" && e.which === 13 && publish(message)
               }
             />
             <MessageButton
@@ -343,6 +344,8 @@ export default Chat;
 
 const Container = styled.div`
   /* position: relative; */
+  border-right: solid 1px #ececec;
+  border-left: solid 1px #ececec;
   @media screen and (min-width: 1024px) {
     margin: 0 auto;
     width: 40%;
@@ -360,17 +363,6 @@ const ChatContainer = styled.div`
   overflow-y: auto;
 `;
 
-const Time = styled.p`
-  text-align: center;
-  font-style: normal;
-  font-weight: 300;
-  font-size: 0.813rem;
-  line-height: 16px;
-
-  color: #8e8e93;
-  margin-bottom: 0.5rem;
-`;
-
 const SenderContainer = styled.div`
   display: flex;
 
@@ -385,6 +377,8 @@ const SenderContainer = styled.div`
     gap: 0.625rem;
 
     max-width: 80%;
+
+    word-break: break-all;
 
     background: #ffffff;
     border: 1px solid #e5e5ea;
@@ -401,6 +395,7 @@ const SenderContainer = styled.div`
     gap: 0.625rem;
 
     max-width: 80%;
+    word-break: break-all;
 
     background: #ffffff;
     border: 1px solid #e5e5ea;
@@ -421,6 +416,7 @@ const ReceiverContainer = styled.div`
     gap: 0.625rem;
 
     max-width: 80%;
+    word-break: break-all;
 
     background: #ffffff;
     border: 1px solid #e5e5ea;
@@ -464,6 +460,7 @@ const InputBox = styled.div`
     border-radius: 2rem;
     background-color: transparent;
     outline: none;
+    border: none;
   }
 `;
 const MessageButton = styled.button`
@@ -473,7 +470,7 @@ const MessageButton = styled.button`
   font-size: 0.8rem;
   line-height: 14px;
   padding: 0 0.625rem;
-  color: ${(props) => (props.isMessage ? '#007aff' : 'gray')};
+  color: ${(props) => (props.isMessage ? "#007aff" : "gray")};
   /* background-color: #007aff;
     svg {
       color: white;
